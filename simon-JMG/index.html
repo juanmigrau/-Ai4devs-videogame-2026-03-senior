@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simon Says - Memory Game</title>
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        /* Arcade-style container */
+        .game-container {
+            text-align: center;
+            background: #0f3460;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 0 40px rgba(230, 57, 70, 0.5),
+                        inset 0 0 20px rgba(0, 0, 0, 0.3);
+            border: 4px solid #e63946;
+            max-width: 600px;
+        }
+
+        /* Retro title */
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            text-shadow: 0 0 10px #e63946,
+                         0 0 20px #e63946,
+                         0 0 30px #e63946;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 10px #e63946, 0 0 20px #e63946; }
+            to { text-shadow: 0 0 20px #e63946, 0 0 30px #e63946, 0 0 40px #e63946; }
+        }
+
+        /* Score display */
+        .score-board {
+            background: #000;
+            padding: 15px 30px;
+            border-radius: 10px;
+            margin: 20px auto;
+            border: 3px solid #00d9ff;
+            box-shadow: 0 0 15px rgba(0, 217, 255, 0.5);
+            display: inline-block;
+        }
+
+        .score {
+            font-size: 2em;
+            color: #00d9ff;
+            font-weight: bold;
+            text-shadow: 0 0 10px #00d9ff;
+        }
+
+        /* Game board - circular layout */
+        .game-board {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            margin: 30px auto;
+            border-radius: 50%;
+            background: #000;
+            border: 6px solid #e63946;
+            box-shadow: 0 0 30px rgba(230, 57, 70, 0.6),
+                        inset 0 0 30px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Center circle */
+        .center-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120px;
+            height: 120px;
+            background: #1a1a2e;
+            border-radius: 50%;
+            border: 4px solid #e63946;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            z-index: 10;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Color buttons positioned in quadrants */
+        .color-btn {
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            cursor: pointer;
+            border: 4px solid #000;
+            transition: all 0.1s;
+            opacity: 0.7;
+        }
+
+        .color-btn:hover {
+            opacity: 0.85;
+        }
+
+        .color-btn.active {
+            opacity: 1 !important;
+            transform: scale(1.05);
+            filter: brightness(1.5);
+            box-shadow: 0 0 30px currentColor;
+        }
+
+        .color-btn.disabled {
+            cursor: not-allowed;
+            opacity: 0.3;
+        }
+
+        /* Red - Top Left */
+        #red {
+            background: #e63946;
+            top: 0;
+            left: 0;
+            border-top-left-radius: 100%;
+        }
+
+        /* Blue - Top Right */
+        #blue {
+            background: #1d3557;
+            top: 0;
+            right: 0;
+            border-top-right-radius: 100%;
+        }
+
+        /* Yellow - Bottom Left */
+        #yellow {
+            background: #f1c40f;
+            bottom: 0;
+            left: 0;
+            border-bottom-left-radius: 100%;
+        }
+
+        /* Green - Bottom Right */
+        #green {
+            background: #06d6a0;
+            bottom: 0;
+            right: 0;
+            border-bottom-right-radius: 100%;
+        }
+
+        /* Control buttons */
+        .controls {
+            margin-top: 30px;
+        }
+
+        .btn {
+            background: linear-gradient(180deg, #e63946 0%, #c1121f 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.3em;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+        }
+
+        .btn:hover {
+            background: linear-gradient(180deg, #ff4757 0%, #e63946 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(230, 57, 70, 0.5);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        /* Game over message */
+        .game-over {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(230, 57, 70, 0.2);
+            border: 2px solid #e63946;
+            border-radius: 10px;
+            font-size: 1.3em;
+            animation: fadeIn 0.5s;
+        }
+
+        .game-over.show {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Message display */
+        .message {
+            font-size: 1.2em;
+            color: #00d9ff;
+            min-height: 30px;
+            margin-top: 15px;
+            text-shadow: 0 0 5px #00d9ff;
+        }
+
+        /* Responsive design */
+        @media (max-width: 600px) {
+            .game-board {
+                width: 300px;
+                height: 300px;
+            }
+            .color-btn {
+                width: 135px;
+                height: 135px;
+            }
+            .center-circle {
+                width: 90px;
+                height: 90px;
+                font-size: 1em;
+            }
+            h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Simon Says</h1>
+        
+        <div class="score-board">
+            <div class="score">Round: <span id="score">0</span></div>
+        </div>
+
+        <div class="game-board">
+            <!-- Four color buttons -->
+            <div class="color-btn" id="red" data-color="red"></div>
+            <div class="color-btn" id="blue" data-color="blue"></div>
+            <div class="color-btn" id="yellow" data-color="yellow"></div>
+            <div class="color-btn" id="green" data-color="green"></div>
+            
+            <!-- Center circle with game status -->
+            <div class="center-circle">
+                <span id="status">Ready!</span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" id="startBtn">Start Game</button>
+        </div>
+
+        <div class="message" id="message"></div>
+        
+        <div class="game-over" id="gameOver">
+            <p>Game Over!</p>
+            <p>Final Score: <span id="finalScore">0</span></p>
+        </div>
+    </div>
+
+    <script>
+        // ==================== GAME STATE ====================
+        const game = {
+            sequence: [],           // The pattern the player must repeat
+            userSequence: [],       // The player's current input
+            round: 0,               // Current round number
+            state: 'idle',          // Game states: 'idle', 'showing', 'input', 'gameover'
+            isPlaying: false,       // Whether a sequence is currently playing
+            startingLength: 3,      // Initial sequence length
+            playbackDelay: 600      // Delay between sequence steps (ms) - fixed speed
+        };
+
+        // ==================== DOM ELEMENTS ====================
+        const colorButtons = document.querySelectorAll('.color-btn');
+        const startBtn = document.getElementById('startBtn');
+        const scoreDisplay = document.getElementById('score');
+        const statusDisplay = document.getElementById('status');
+        const messageDisplay = document.getElementById('message');
+        const gameOverDisplay = document.getElementById('gameOver');
+        const finalScoreDisplay = document.getElementById('finalScore');
+
+        // Color to frequency mapping for Web Audio API
+        const tones = {
+            red: 329.63,      // E4
+            blue: 261.63,     // C4
+            yellow: 392.00,   // G4
+            green: 440.00     // A4
+        };
+
+        // ==================== AUDIO SYSTEM ====================
+        // Create Web Audio API context for generating tones
+        let audioContext = null;
+
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Play a tone for a specific color
+        function playTone(color, duration = 400) {
+            initAudio();
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = tones[color];
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration / 1000);
+        }
+
+        // ==================== GAME LOGIC ====================
+        
+        // Initialize a new game
+        function startGame() {
+            game.sequence = [];
+            game.userSequence = [];
+            game.round = 0;
+            game.state = 'idle';
+            game.isPlaying = false;
+            
+            gameOverDisplay.classList.remove('show');
+            messageDisplay.textContent = '';
+            
+            // Generate initial sequence with starting length
+            for (let i = 0; i < game.startingLength; i++) {
+                addToSequence();
+            }
+            
+            startBtn.disabled = true;
+            nextRound();
+        }
+
+        // Add a random color to the sequence
+        function addToSequence() {
+            const colors = ['red', 'blue', 'yellow', 'green'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            game.sequence.push(randomColor);
+        }
+
+        // Start the next round
+        function nextRound() {
+            game.round++;
+            game.userSequence = [];
+            scoreDisplay.textContent = game.round;
+            statusDisplay.textContent = 'Watch!';
+            messageDisplay.textContent = 'Watch the pattern...';
+            
+            // Add one more color to the sequence
+            if (game.round > 1) {
+                addToSequence();
+            }
+            
+            // Wait a moment, then play the sequence
+            setTimeout(() => {
+                playSequence();
+            }, 1000);
+        }
+
+        // Play the full sequence to the user
+        async function playSequence() {
+            game.state = 'showing';
+            game.isPlaying = true;
+            disableButtons();
+            
+            // Play each color in the sequence with delay between each
+            for (let i = 0; i < game.sequence.length; i++) {
+                await sleep(game.playbackDelay);
+                activateButton(game.sequence[i]);
+            }
+            
+            // Sequence complete - wait for user input
+            game.isPlaying = false;
+            game.state = 'input';
+            statusDisplay.textContent = 'Your Turn!';
+            messageDisplay.textContent = 'Repeat the pattern!';
+            enableButtons();
+        }
+
+        // Activate a button (visual + audio feedback)
+        function activateButton(color) {
+            const button = document.getElementById(color);
+            button.classList.add('active');
+            playTone(color);
+            
+            // Deactivate after a short duration
+            setTimeout(() => {
+                button.classList.remove('active');
+            }, 300);
+        }
+
+        // Handle user clicking a color button
+        function handleColorClick(event) {
+            // Ignore clicks during sequence playback or wrong game state
+            if (game.state !== 'input' || game.isPlaying) {
+                return;
+            }
+            
+            const clickedColor = event.target.dataset.color;
+            if (!clickedColor) return;
+            
+            // Provide visual and audio feedback
+            activateButton(clickedColor);
+            
+            // Add to user's sequence
+            game.userSequence.push(clickedColor);
+            
+            // Check if the input matches the sequence so far
+            const currentIndex = game.userSequence.length - 1;
+            
+            if (game.userSequence[currentIndex] !== game.sequence[currentIndex]) {
+                // Wrong color - game over!
+                gameOver();
+                return;
+            }
+            
+            // Check if user completed the full sequence
+            if (game.userSequence.length === game.sequence.length) {
+                // Correct sequence! Move to next round
+                game.state = 'idle';
+                statusDisplay.textContent = 'Correct!';
+                messageDisplay.textContent = 'Great! Get ready for the next round...';
+                disableButtons();
+                
+                setTimeout(() => {
+                    nextRound();
+                }, 2000);
+            }
+        }
+
+        // Handle game over
+        function gameOver() {
+            game.state = 'gameover';
+            statusDisplay.textContent = 'Game Over';
+            messageDisplay.textContent = '';
+            disableButtons();
+            
+            // Show game over screen with final score
+            finalScoreDisplay.textContent = game.round;
+            gameOverDisplay.classList.add('show');
+            
+            // Play a "wrong" sound
+            playTone('red', 800);
+            
+            // Re-enable start button
+            startBtn.disabled = false;
+        }
+
+        // ==================== UI HELPERS ====================
+        
+        // Disable all color buttons
+        function disableButtons() {
+            colorButtons.forEach(btn => {
+                btn.classList.add('disabled');
+            });
+        }
+
+        // Enable all color buttons
+        function enableButtons() {
+            colorButtons.forEach(btn => {
+                btn.classList.remove('disabled');
+            });
+        }
+
+        // Utility function for delays
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // ==================== EVENT LISTENERS ====================
+        
+        // Start button
+        startBtn.addEventListener('click', startGame);
+        
+        // Color button clicks
+        colorButtons.forEach(button => {
+            button.addEventListener('click', handleColorClick);
+        });
+
+        // Initialize game state
+        disableButtons();
+    </script>
+</body>
+</html>
